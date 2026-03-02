@@ -5,13 +5,11 @@ import sys
 import math
 import os
 
-# --- CONFIGURATION & CONSTANTS ---
 WIDTH, HEIGHT = 640, 480
 TILE_SIZE = 32
 FPS = 60
 COLS, ROWS = WIDTH // TILE_SIZE, HEIGHT // TILE_SIZE
 
-# Tile IDs
 EMPTY, DIRT, ROCK, BRONZE, SILVER, GOLD, DIAMOND = 0, 1, 2, 3, 4, 5, 6
 
 TILE_COLORS = {
@@ -26,12 +24,11 @@ ORE_CONFIG = {
     'DIAMOND': {'base': 1, 'scale': 0.1}
 }
 
-# Overworld Constants
 C_FLOOR = (45, 40, 35)
 C_WALL = (80, 70, 60)
 C_COUNTER = (120, 80, 40)
 
-# H = Hole, S = Spawn, O = Orpheus, C = Counter, W = Wall, t = Static Torch, . = Floor
+
 LEVEL_MAP = [
     "WWWWWWWWWWWWWWWWWWWW",
     "Wt................tW",
@@ -50,7 +47,7 @@ LEVEL_MAP = [
 ]
 
 
-# --- AUDIO MANAGER ---
+
 class SoundManager:
     def __init__(self):
         pygame.mixer.init()
@@ -67,7 +64,7 @@ class SoundManager:
             self.sounds[name].play()
 
 
-# --- SHARED DATA ---
+
 class GameSession:
     def __init__(self):
         self.inventory = {BRONZE: 0, SILVER: 0, GOLD: 0, DIAMOND: 0}
@@ -75,7 +72,7 @@ class GameSession:
         self.shovel_level = 1
 
 
-# --- UTILITIES ---
+
 class Button:
     def __init__(self, x, y, width, height, text, font):
         self.rect = pygame.Rect(x, y, width, height)
@@ -104,7 +101,7 @@ def create_light_mask(radius, intensity=255):
     return mask
 
 
-# --- PROCEDURAL ANIMATION DATA (Fallback) ---
+
 def create_pixel_sprite(width, height, frames_list):
     sprites = []
     for frame_data in frames_list:
@@ -126,7 +123,7 @@ def create_pixel_sprite(width, height, frames_list):
 M, B, C, _ = (139, 69, 19), (0, 0, 0), (200, 200, 200), None
 
 
-# --- UNIFIED ENTITY CLASS ---
+
 class GridMole:
     def __init__(self, start_x, start_y, base_img):
         self.grid_x, self.grid_y = start_x, start_y
@@ -187,7 +184,7 @@ class GridMole:
                      ((self.grid_x * TILE_SIZE) + offset_x, (self.grid_y * TILE_SIZE) - int(camera_y) + offset_y))
 
 
-# --- UNDERGROUND CLASSES ---
+
 class Particle:
     __slots__ = ['active', 'x', 'y', 'vx', 'vy', 'color', 'life']
 
@@ -293,7 +290,7 @@ class Terrain:
                         pygame.draw.rect(surface, (0, 255, 0), (screen_x + 2, bar_y, bar_width, 4))
 
 
-# --- MAIN ENGINE ---
+
 async def main():
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -307,7 +304,7 @@ async def main():
     audio = SoundManager()
     audio.load('dig', os.path.join('assets', 'digging.ogg'))
 
-    # Resource Allocation Matrix mapped strictly to assets/ folder
+
     tile_images = {}
     resource_files = [
         ("dirt.png", DIRT),
@@ -367,16 +364,16 @@ async def main():
 
     ow_mole = GridMole(spawn_pos[0], spawn_pos[1], mole_img)
 
-    # Global UI Layer Elements
+
     btn_inv_toggle = Button(10, 10, 90, 30, "Inventory", font_small)
     btn_surface = Button(WIDTH - 160, 10, 150, 30, "Return to Surface", font_small)
     btn_close_inv = Button(WIDTH // 2 - 50, HEIGHT - 80, 100, 40, "Close", font_small)
 
-    # State-Bound Action Prompts
+
     btn_talk = Button(0, 0, 120, 40, "Talk (Orpheus)", font_small)
     btn_mine = Button(0, 0, 120, 40, "Enter Mine", font_small)
 
-    # Dialogue & Economy Interfaces
+
     btn_open_shop = Button(0, 0, 120, 40, "Open Shop", font_small)
     btn_leave_shack = Button(0, 0, 80, 40, "Leave", font_small)
 
@@ -427,7 +424,7 @@ async def main():
         keys = pygame.key.get_pressed()
 
         if not show_inventory:
-            # --- PIPELINE: OVERWORLD ---
+
             if global_state == 'OVERWORLD':
                 if overworld_substate == 'WALK':
                     ow_mole.can_move_timer -= dt
@@ -466,7 +463,7 @@ async def main():
                     if dist_to_npc < 2.0:
                         btn_talk.rect.topleft = (float_x, float_y)
                         if mouse_clicked and btn_talk.is_clicked(mouse_pos, mouse_pressed):
-                            audio.play('talk')
+
                             overworld_substate = 'DIALOGUE'
 
                     if dist_to_hole < 2.0:
@@ -506,7 +503,7 @@ async def main():
                                     session.shovel_level += 1
                                     btn_buy_shovel.text = f"Upgrade Shovel (${100 * session.shovel_level})"
 
-            # --- PIPELINE: UNDERGROUND ---
+
             elif global_state == 'UNDERGROUND':
                 ug_mole.can_move_timer -= dt
                 dx, dy = 0, 0
@@ -534,7 +531,7 @@ async def main():
                             if terrain.grid[(tx, ty)][1] <= 0:
                                 if tile_data[0] in session.inventory: session.inventory[tile_data[0]] += 1
                                 particle_pool.emit((tx * TILE_SIZE) + 16, (ty * TILE_SIZE) + 16,
-                                                   TILE_COLORS[tile_data[0]])
+                                                    TILE_COLORS[tile_data[0]])
                                 terrain.grid[(tx, ty)][0] = EMPTY
                                 ug_mole.grid_x, ug_mole.grid_y = tx, ty
                                 ug_mole.can_move_timer = 150
@@ -557,7 +554,7 @@ async def main():
                     global_state = 'OVERWORLD'
                     ow_mole.can_move_timer = 300
 
-                    # --- RENDERING PIPELINE ---
+        
         if global_state == 'OVERWORLD':
             screen.fill(C_FLOOR)
             for r in range(ROWS):
@@ -695,6 +692,7 @@ async def main():
             btn_close_inv.draw(screen, mouse_pos)
 
         pygame.display.flip()
+        await asyncio.sleep(0)
 
     pygame.quit()
     sys.exit()
